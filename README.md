@@ -9,7 +9,15 @@ The project combines OCR, prompt engineering, context-aware translation, checkpo
 No cloud services or external APIs are required.
 
 ---
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
 
+![License](https://img.shields.io/badge/License-MIT-green)
+
+![Offline](https://img.shields.io/badge/Offline-Yes-success)
+
+![Ollama](https://img.shields.io/badge/Ollama-Compatible-black)
+
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-orange)
 ## ✨ Features
 
 - Completely offline translation
