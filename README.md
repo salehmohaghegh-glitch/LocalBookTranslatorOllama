@@ -327,6 +327,29 @@ Special thanks to all contributors in the open-source AI community.
 
 ---
 
+# Why this project was created
+
+This project started from a simple idea:
+
+> Translating a scanned book locally should be straightforward, reliable, and accessible to everyone.
+
+Many existing AI translation workflows require cloud services, expensive APIs, or complex software stacks. While these solutions are powerful, they are not always practical for users who prefer offline processing, value privacy, or work with large collections of scanned books.
+
+BookTranslatorAI was created to provide a lightweight alternative that combines OCR, prompt engineering, and local Large Language Models into a simple and transparent workflow.
+
+The project is intentionally designed to be:
+
+- Fully offline
+- Easy to understand
+- Easy to customize
+- Easy to debug
+- Efficient on consumer hardware
+
+Rather than trying to replace professional translation software, BookTranslatorAI aims to be an open-source foundation that anyone can study, improve, and adapt to their own translation workflow.
+
+Contributions, ideas, and feedback are always welcome.
+
+
 # Disclaimer
 
 BookTranslatorAI is intended as an AI-assisted translation tool.
