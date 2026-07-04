@@ -329,6 +329,40 @@ config.py
 
 برنامه‌های آینده:
 
+اصلاح ساختار به حالت زیر:
+```
+
+
+PDF
+
+↓
+
+Images
+
+↓
+
+OCR
+
+↓
+
+Review OCR
+
+↓
+
+Translate
+
+↓
+
+Review Translation
+
+↓
+
+Export
+```
+
+
+سپس:
+
 - [ ] رابط گرافیکی (GUI)
 - [ ] پشتیبانی مستقیم از PDF
 - [ ] خروجی EPUB
