@@ -1,26 +1,56 @@
 # =====================================================
-# Book Translator AI v2
+# BookTranslatorAI
 # Main Program
+# Version 2.0
 # =====================================================
 
+import base64
 import json
 import logging
 import re
-import base64
 from pathlib import Path
 
 import requests
 
-from config import *
-from prompts import OCR_PROMPT, TRANSLATION_PROMPT
-
+from config import (
+    PROJECT_NAME,
+    VERSION,
+    OLLAMA_URL,
+    OCR_MODEL,
+    TRANSLATE_MODEL,
+    BACKUP_MODEL,
+    INPUT_DIR,
+    OUTPUT_DIR,
+    JSON_DIR,
+    MARKDOWN_FILE,
+    CHECKPOINT_FILE,
+    LOG_FILE,
+    BOOK_TITLE,
+    BOOK_TOPIC,
+    STREAM,
+    TEMPERATURE,
+    TOP_P,
+    TOP_K,
+    REPEAT_PENALTY,
+    NUM_PREDICT,
+    MAX_RETRY,
+    TIMEOUT,
+    SAVE_JSON,
+    SAVE_MARKDOWN,
+    SUPPORTED_IMAGES,
+    EMPTY_PAGE_TEXT,
+    FAILED_TRANSLATION,
+)
+from prompts import (
+    OCR_PROMPT,
+    TRANSLATION_PROMPT,
+)
 
 # =====================================================
-# Session
+# HTTP Session
 # =====================================================
 
 session = requests.Session()
-
 
 # =====================================================
 # Logger
@@ -40,36 +70,163 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# =====================================================
+# Startup
+# =====================================================
 
+def print_header():
+
+    print("=" * 60)
+    print(f"{PROJECT_NAME}   v{VERSION}")
+    print("=" * 60)
+    print()
+
+
+def print_ok(text):
+
+    print(f"✓ {text}")
+
+
+def print_error(text):
+
+    print(f"✗ {text}")
+
+
+def check_ollama():
+    """
+    بررسی اجرای Ollama
+    """
+
+    try:
+
+        requests.get(
+
+            "http://127.0.0.1:11434",
+
+            timeout=2
+
+        )
+
+        return True
+
+    except:
+
+        return False
+
+
+def startup():
+    """
+    بررسی اولیه برنامه
+    """
+
+    print_header()
+
+    print("Checking Ollama...")
+
+    if not check_ollama():
+
+        print_error("Ollama is not running.")
+        print()
+        print("Please start Ollama and run the program again.")
+        print()
+
+        input("Press Enter to exit...")
+
+        return False
+
+    print_ok("Ollama is running.")
+
+    if not INPUT_DIR.exists():
+
+        print_error("Input folder not found.")
+
+        return False
+
+    OUTPUT_DIR.mkdir(
+
+        parents=True,
+
+        exist_ok=True
+
+    )
+
+    images = sorted(
+
+        [
+
+            file
+
+            for file in INPUT_DIR.iterdir()
+
+            if file.suffix.lower() in SUPPORTED_IMAGES
+
+        ],
+
+        key=lambda f: int(
+
+            re.search(
+
+                r"\d+",
+
+                f.stem
+
+            ).group()
+
+        )
+
+    )
+
+    if not images:
+
+        print_error("No images found.")
+
+        return False
+
+    print_ok(f"Pages Found : {len(images)}")
+
+    print()
+
+    print("-" * 60)
+
+    print("Configuration")
+
+    print("-" * 60)
+
+    print(f"OCR Model       : {OCR_MODEL}")
+    print(f"Translate Model : {TRANSLATE_MODEL}")
+    print(f"Backup Model    : {BACKUP_MODEL}")
+
+    print()
+
+    print(f"Book Title : {BOOK_TITLE}")
+
+    print("-" * 60)
+
+    print()
+
+    return images
 # =====================================================
 # Checkpoint
 # =====================================================
 
 def load_checkpoint():
     """
-    خواندن آخرین وضعیت برنامه
+    خواندن آخرین وضعیت ترجمه
     """
 
     if not CHECKPOINT_FILE.exists():
 
         return {
-
             "page": 0,
-
             "context": ""
-
         }
 
     try:
 
         with open(
-
             CHECKPOINT_FILE,
-
             "r",
-
             encoding="utf-8"
-
         ) as f:
 
             return json.load(f)
@@ -79,11 +236,8 @@ def load_checkpoint():
         logger.error(e)
 
         return {
-
             "page": 0,
-
             "context": ""
-
         }
 
 
@@ -92,27 +246,18 @@ def save_checkpoint(page, context):
     ذخیره آخرین صفحه ترجمه شده
     """
 
-    data = {
-
-        "page": page,
-
-        "context": context
-
-    }
-
     with open(
-
         CHECKPOINT_FILE,
-
         "w",
-
         encoding="utf-8"
-
     ) as f:
 
         json.dump(
 
-            data,
+            {
+                "page": page,
+                "context": context
+            },
 
             f,
 
@@ -156,14 +301,16 @@ def call_ollama(model, prompt, image=None):
 
     }
 
-    if image is not None:
+    if image:
 
         with open(image, "rb") as f:
 
             payload["images"] = [
 
                 base64.b64encode(
+
                     f.read()
+
                 ).decode()
 
             ]
@@ -184,27 +331,31 @@ def call_ollama(model, prompt, image=None):
 
             response.raise_for_status()
 
-            data = response.json()
+            answer = response.json().get(
 
-            if "response" not in data:
+                "response",
 
-                raise Exception("Invalid response")
+                ""
 
-            text = data["response"].strip()
+            ).strip()
 
-            if not text:
+            if answer:
 
-                raise Exception("Empty response")
-
-            return text
+                return answer
 
         except Exception as e:
 
             logger.warning(
 
-                f"Retry {attempt+1}: {e}"
+                f"{model} Retry {attempt+1}: {e}"
 
             )
+
+    logger.error(
+
+        f"{model} failed."
+
+    )
 
     return ""
 
@@ -215,10 +366,10 @@ def call_ollama(model, prompt, image=None):
 
 def ocr_page(image_path):
     """
-    OCR صفحه
+    OCR یک صفحه
     """
 
-    return call_ollama(
+    text = call_ollama(
 
         OCR_MODEL,
 
@@ -228,6 +379,12 @@ def ocr_page(image_path):
 
     )
 
+    if not text:
+
+        return EMPTY_PAGE_TEXT
+
+    return text
+
 
 # =====================================================
 # Translation
@@ -235,8 +392,12 @@ def ocr_page(image_path):
 
 def translate_page(text, context=""):
     """
-    ترجمه صفحه
+    ترجمه یک صفحه
     """
+
+    if not text:
+
+        return FAILED_TRANSLATION
 
     if text == EMPTY_PAGE_TEXT:
 
@@ -254,7 +415,7 @@ def translate_page(text, context=""):
 
     )
 
-    return call_ollama(
+    translated = call_ollama(
 
         TRANSLATE_MODEL,
 
@@ -262,25 +423,52 @@ def translate_page(text, context=""):
 
     )
 
+    if translated:
+
+        return translated
+
+    logger.warning(
+
+        "Using backup model."
+
+    )
+
+    translated = call_ollama(
+
+        BACKUP_MODEL,
+
+        prompt
+
+    )
+
+    if translated:
+
+        return translated
+
+    return FAILED_TRANSLATION
+
 # =====================================================
 # Utility Functions
 # =====================================================
 
 def detect_loop(text):
     """
-    تشخیص ساده خروجی‌های تکراری یا خراب
+    تشخیص ساده خروجی خراب یا تکراری
     """
+
+    if not text:
+
+        return True
 
     text = text.strip()
 
-    if not text:
-        return True
-
     if text == EMPTY_PAGE_TEXT:
+
         return False
 
-    # پاسخهای رایج خراب
-    bad_patterns = [
+    lower = text.lower()
+
+    bad_patterns = (
 
         "i'm sorry",
 
@@ -294,9 +482,7 @@ def detect_loop(text):
 
         "```"
 
-    ]
-
-    lower = text.lower()
+    )
 
     for item in bad_patterns:
 
@@ -304,7 +490,6 @@ def detect_loop(text):
 
             return True
 
-    # تکرار بیش از حد یک خط
     lines = [
 
         line.strip()
@@ -315,13 +500,9 @@ def detect_loop(text):
 
     ]
 
-    if not lines:
+    if len(lines) >= 3:
 
-        return True
-
-    for line in set(lines):
-
-        if len(line) > 10 and lines.count(line) >= 3:
+        if len(set(lines)) == 1:
 
             return True
 
@@ -332,7 +513,7 @@ def detect_loop(text):
 
 def extract_last_paragraph(text):
     """
-    استخراج آخرین پاراگراف برای Context
+    استخراج آخرین پاراگراف
     """
 
     if not text:
@@ -343,7 +524,13 @@ def extract_last_paragraph(text):
 
         p.strip()
 
-        for p in re.split(r"\n\s*\n", text)
+        for p in re.split(
+
+            r"\n\s*\n",
+
+            text
+
+        )
 
         if p.strip()
 
@@ -360,14 +547,14 @@ def extract_last_paragraph(text):
 
 def save_json(page, ocr_text, translation):
     """
-    ذخیره خروجی JSON
+    ذخیره JSON
     """
 
     if not SAVE_JSON:
 
         return
 
-    file = JSON_DIR / f"{page:04d}.json"
+    filename = JSON_DIR / f"{page:04d}.json"
 
     data = {
 
@@ -381,7 +568,7 @@ def save_json(page, ocr_text, translation):
 
     with open(
 
-        file,
+        filename,
 
         "w",
 
@@ -406,7 +593,7 @@ def save_json(page, ocr_text, translation):
 
 def save_markdown(page, translation):
     """
-    افزودن ترجمه به فایل Markdown
+    افزودن صفحه به Markdown
     """
 
     if not SAVE_MARKDOWN:
@@ -424,75 +611,40 @@ def save_markdown(page, translation):
     ) as f:
 
         f.write("\n\n")
-
-        f.write("----------------------------------------\n")
-
-        f.write(f"## Page {page}\n\n")
-
+        f.write("=" * 50)
+        f.write("\n")
+        f.write(f"## Page {page}")
+        f.write("\n\n")
         f.write(translation)
-
         f.write("\n")
 
 
 # =====================================================
 
-def translate_with_retry(ocr_text, context):
+def process_translation(ocr_text, context):
     """
-    ترجمه با Retry و Backup Model
+    کنترل کیفیت ترجمه
     """
 
-    if not ocr_text.strip():
+    translated = translate_page(
 
-        return FAILED_TRANSLATION
+        ocr_text,
 
-    # صفحه خالی
-    if ocr_text == EMPTY_PAGE_TEXT:
-
-        return EMPTY_PAGE_TEXT
-
-    # فقط شماره صفحه
-    if ocr_text.strip().isdigit():
-
-        return ocr_text
-
-    # تلاش با مدل اصلی
-    for _ in range(MAX_RETRY):
-
-        translated = translate_page(
-
-            ocr_text,
-
-            context
-
-        )
-
-        if not detect_loop(translated):
-
-            return translated
-
-    logger.warning("Using Backup Model")
-
-    prompt = TRANSLATION_PROMPT.format(
-
-        BOOK_TITLE=BOOK_TITLE,
-
-        BOOK_TOPIC=BOOK_TOPIC,
-
-        CONTEXT=context,
-
-        TEXT=ocr_text
+        context
 
     )
 
-    translated = call_ollama(
+    if translated == FAILED_TRANSLATION:
 
-        BACKUP_MODEL,
-
-        prompt
-
-    )
+        return translated
 
     if detect_loop(translated):
+
+        logger.warning(
+
+            "Loop detected."
+
+        )
 
         return FAILED_TRANSLATION
 
@@ -503,140 +655,86 @@ def translate_with_retry(ocr_text, context):
 # =====================================================
 
 def main():
-    print("=" * 60)
-    print(PROJECT_NAME)
-    print(f"OCR Model       : {OCR_MODEL}")
-    print(f"Translate Model : {TRANSLATE_MODEL}")
-    print(f"Backup Model    : {BACKUP_MODEL}")
-    print(f"Input Folder    : {INPUT_DIR}")
-    print(f"Output Folder   : {OUTPUT_DIR}")
-    print("=" * 60)
-    logger.info("=" * 60)
-    logger.info("Book Translation Started")
-    logger.info("=" * 60)
 
-    # -------------------------------------------------
-    # Resume
-    # -------------------------------------------------
+    # بررسی اولیه
+    images = startup()
 
+    if not images:
+        return
+
+    # ایجاد پوشه‌های خروجی
+    if SAVE_JSON:
+        JSON_DIR.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+    # بارگذاری آخرین وضعیت
     checkpoint = load_checkpoint()
 
-    start_page = checkpoint["page"] + 1
+    start_page = checkpoint["page"]
 
     context = checkpoint["context"]
 
-    # -------------------------------------------------
-    # Images
-    # -------------------------------------------------
-    images = sorted(
-        (
-            file
-            for file in INPUT_DIR.iterdir()
-            if file.suffix.lower() in SUPPORTED_IMAGES
-        ),
-        key=lambda f: int(re.search(r"\d+", f.stem).group())
-    )
+    total_pages = len(images)
 
-    if not images:
+    print()
+    print("=" * 60)
+    print("Translation Started")
+    print("=" * 60)
+    print()
 
-        print("No images found.")
+    # پردازش صفحات
+    for index, image_path in enumerate(images, start=1):
 
-        logger.error("No images found.")
-
-        return
-
-    print(f"{len(images)} pages found.\n")
-
-    # -------------------------------------------------
-    # Process Pages
-    # -------------------------------------------------
-
-    for page, image in enumerate(images, start=1):
-
-        if page < start_page:
-
+        if index <= start_page:
             continue
 
-        print(f"[{page}/{len(images)}] {image.name}")
+        print(f"[{index}/{total_pages}] {image_path.name}")
 
-        logger.info(f"Page {page}")
+        # ---------------- OCR ----------------
 
-        # ---------------------------------------------
-        # OCR
-        # ---------------------------------------------
+        ocr_text = ocr_page(image_path)
 
-        ocr_text = ocr_page(image)
+        # ---------------- Translation ----------------
 
-        if not ocr_text:
-
-            logger.warning("OCR failed.")
-
-            continue
-
-        # ---------------------------------------------
-        # Translation
-        # ---------------------------------------------
-
-        translated = translate_with_retry(
-
+        translation = process_translation(
             ocr_text,
-
             context
-
         )
 
-        # ---------------------------------------------
-        # Save
-        # ---------------------------------------------
+        # ---------------- Save ----------------
 
         save_json(
-
-            page,
-
+            index,
             ocr_text,
-
-            translated
-
+            translation
         )
 
         save_markdown(
-
-            page,
-
-            translated
-
+            index,
+            translation
         )
 
-        # ---------------------------------------------
-        # Update Context
-        # ---------------------------------------------
+        # ---------------- Context ----------------
 
         context = extract_last_paragraph(
-
-            ocr_text
-
+            translation
         )
-
-        # ---------------------------------------------
-        # Checkpoint
-        # ---------------------------------------------
 
         save_checkpoint(
-
-            page,
-
+            index,
             context
-
         )
 
-        logger.info(f"Page {page} completed.")
+        logger.info(
+            f"Page {index} completed."
+        )
 
-    logger.info("=" * 60)
-    logger.info("Translation Finished")
-    logger.info("=" * 60)
-
-    print("\nTranslation Completed Successfully.")
-
+    print()
+    print("=" * 60)
+    print("Translation Finished")
+    print("=" * 60)
 
 # =====================================================
 # Program Entry
@@ -644,23 +742,5 @@ def main():
 
 if __name__ == "__main__":
 
-
-    try:
-
-        main()
-
-    except KeyboardInterrupt:
-
-        print("\nInterrupted by user.")
-
-        logger.warning("Interrupted by user.")
-
-    except Exception as e:
-
-        logger.exception(e)
-
-        print("\nUnexpected Error")
-
-    finally:
-
-        session.close()
+    main()
+    
