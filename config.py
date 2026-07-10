@@ -5,6 +5,10 @@ Configuration File
 =====================================================
 فقط تنظیمات پروژه
 """
+import re
+
+def safe_filename(name):
+    return re.sub(r'[\\/*?:"<>|]', "_", name).strip()
 
 from pathlib import Path
 
@@ -20,10 +24,11 @@ VERSION = "2.0"
 # Book Information
 # =====================================================
 
-BOOK_TITLE = "Your Book Name You Want to Translate"
+BOOK_TITLE = "Your Book Name "
 
 BOOK_TOPIC = """
-Your Book Topic and keywords
+Your book Abstract for translation model attention
+
 """
 
 SOURCE_LANGUAGE = "English"
@@ -60,7 +65,13 @@ TEMP_DIR.mkdir(exist_ok=True)
 # Output Files
 # =====================================================
 
-MARKDOWN_FILE = OUTPUT_DIR / "book.md"
+MARKDOWN_FILE = OUTPUT_DIR / f"{safe_filename(BOOK_TITLE)}.md"
+
+OCR_MARKDOWN_FILE = OUTPUT_DIR / f"{safe_filename(BOOK_TITLE)}.ocr.md"
+
+TRANSLATION_MARKDOWN_FILE = OUTPUT_DIR / f"{safe_filename(BOOK_TITLE)}.fa.md"
+
+BILINGUAL_MARKDOWN_FILE = OUTPUT_DIR / f"{safe_filename(BOOK_TITLE)}.bilingual.md"
 
 CHECKPOINT_FILE = OUTPUT_DIR / "checkpoint.json"
 
@@ -80,11 +91,11 @@ STREAM = False
 # Models
 # =====================================================
 
-OCR_MODEL = "glm-ocr:latest"
+OCR_MODEL ="deepseek-ocr:latest"  #"glm-ocr:latest"  "deepseek-ocr:latest" 
 
-TRANSLATE_MODEL = "translategemma:4b"
+TRANSLATE_MODEL =  "translategemma:4b "   #"Gemma4:e4b" "translategemma:4b "
 
-BACKUP_MODEL = "Gemma4:e4b"
+BACKUP_MODEL ="Gemma4:latest " #"translategemma:4b " 
 
 # =====================================================
 # Retry
@@ -102,7 +113,7 @@ TOP_P = 0.9
 
 TOP_K = 40
 
-REPEAT_PENALTY = 1.15
+REPEAT_PENALTY = 1.05
 
 NUM_PREDICT = 8192
 
@@ -150,3 +161,6 @@ LOG_LEVEL = "INFO"
 SAVE_JSON = True
 
 SAVE_MARKDOWN = True
+
+
+

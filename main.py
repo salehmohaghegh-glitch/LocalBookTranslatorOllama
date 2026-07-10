@@ -23,6 +23,9 @@ from config import (
     OUTPUT_DIR,
     JSON_DIR,
     MARKDOWN_FILE,
+    OCR_MARKDOWN_FILE,
+    TRANSLATION_MARKDOWN_FILE,
+    BILINGUAL_MARKDOWN_FILE,
     CHECKPOINT_FILE,
     LOG_FILE,
     BOOK_TITLE,
@@ -162,17 +165,7 @@ def startup():
 
         ],
 
-        key=lambda f: int(
-
-            re.search(
-
-                r"\d+",
-
-                f.stem
-
-            ).group()
-
-        )
+        key=lambda f: int(re.findall(r"\d+", f.stem)[-1]) if re.findall(r"\d+", f.stem) else 0
 
     )
 
@@ -383,8 +376,27 @@ def ocr_page(image_path):
 
         return EMPTY_PAGE_TEXT
 
-    return text
+    cleaned_text = clean_ocr_output(text) 
+    return cleaned_text
 
+
+# =====================================================
+# Clean OCR
+# =====================================================
+
+def clean_ocr_output(text):
+    # ۱. تبدیل براکت‌های بلاک ریاضی به $$ (اگر مدل باز هم خطا کرد)
+    text = re.sub(r'\\\[', '$$\n', text)
+    text = re.sub(r'\\\]', '\n$$', text)
+    
+    # ۲. تبدیل پرانتزهای ریاضی اینلاین به $
+    text = re.sub(r'\\\(', '$', text)
+    text = re.sub(r'\\\)', '$', text)
+    
+    # ۳. حذف هرگونه مختصات جا مانده احتمالی (مثل text517, 730, ...)
+    text = re.compile(r'(text|equation)\d+,\s*\d+,\s*\d+,\s*\d+').sub('', text)
+    
+    return text.strip()
 
 # =====================================================
 # Translation
@@ -469,20 +481,16 @@ def detect_loop(text):
     lower = text.lower()
 
     bad_patterns = (
-
-        "i'm sorry",
-
-        "as an ai",
-
-        "i cannot",
-
-        "translation:",
-
-        "translated:",
-
-        "```"
-
-    )
+    "i'm sorry",
+    "as an ai",
+    "i cannot",
+    "translation:",
+    "translated:",
+    "```",
+    "strict formatting rules", # اضافه شد برای شکار لوپ پرامپت
+    "math formulas:",          # اضافه شد برای شکار لوپ پرامپت
+    "pipeline inhibitions"     # اضافه شد برای شکار لوپ پرامپت
+)
 
     for item in bad_patterns:
 
@@ -620,6 +628,101 @@ def save_markdown(page, translation):
 
 
 # =====================================================
+# Save OCR Markdown
+# =====================================================
+
+def save_ocr_markdown(page, ocr_text):
+    """
+    ذخیره متن OCR
+    """
+
+    with open(
+
+        OCR_MARKDOWN_FILE,
+
+        "a",
+
+        encoding="utf-8"
+
+    ) as f:
+
+        f.write(f"# Page {page}\n\n")
+
+        f.write(ocr_text.strip())
+
+        f.write("\n\n")
+
+        f.write("---")
+
+        f.write("\n\n")
+
+
+        # =====================================================
+# Save Translation Markdown
+# =====================================================
+
+def save_translation_markdown(page, translation):
+    """
+    ذخیره ترجمه
+    """
+
+    with open(
+
+        TRANSLATION_MARKDOWN_FILE,
+
+        "a",
+
+        encoding="utf-8"
+
+    ) as f:
+
+        f.write(f"# Page {page}\n\n")
+
+        f.write(translation.strip())
+
+        f.write("\n\n")
+
+        f.write("---")
+
+        f.write("\n\n")
+
+        # =====================================================
+# Save Bilingual Markdown
+# =====================================================
+
+def save_bilingual_markdown(page, ocr_text, translation):
+    """
+    ذخیره نسخه دوزبانه
+    """
+
+    with open(
+
+        BILINGUAL_MARKDOWN_FILE,
+
+        "a",
+
+        encoding="utf-8"
+
+    ) as f:
+
+        f.write(f"# Page {page}\n\n")
+
+        f.write("## Original\n\n")
+
+        f.write(ocr_text.strip())
+
+        f.write("\n\n")
+
+        f.write("## Translation\n\n")
+
+        f.write(translation.strip())
+
+        f.write("\n\n")
+
+        f.write("---")
+
+        f.write("\n\n")
+# =====================================================
 
 def process_translation(ocr_text, context):
     """
@@ -685,12 +788,12 @@ def main():
     print()
 
     # پردازش صفحات
-    for index, image_path in enumerate(images, start=1):
+    for Pageindex, image_path in enumerate(images, start=1):
 
-        if index <= start_page:
+        if Pageindex <= start_page:
             continue
 
-        print(f"[{index}/{total_pages}] {image_path.name}")
+        print(f"[{Pageindex}/{total_pages}] {image_path.name}")
 
         # ---------------- OCR ----------------
 
@@ -706,13 +809,24 @@ def main():
         # ---------------- Save ----------------
 
         save_json(
-            index,
+            Pageindex,
             ocr_text,
             translation
         )
 
-        save_markdown(
-            index,
+        save_ocr_markdown(
+            Pageindex,
+            ocr_text
+        )
+
+        save_translation_markdown(
+            Pageindex,
+            translation
+        )
+
+        save_bilingual_markdown(
+            Pageindex,
+            ocr_text,
             translation
         )
 
@@ -723,12 +837,12 @@ def main():
         )
 
         save_checkpoint(
-            index,
+            Pageindex,
             context
         )
 
         logger.info(
-            f"Page {index} completed."
+            f"Page {Pageindex} completed."
         )
 
     print()

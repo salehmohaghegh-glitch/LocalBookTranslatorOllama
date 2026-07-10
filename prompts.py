@@ -11,64 +11,21 @@ LLM Prompts
 # ----------------------------------------------------------
 
 OCR_PROMPT = """
-You are an expert OCR engine specialized in printed books.
 
-Your task is ONLY to extract text from the provided page.
-
-Rules:
-
-• Return ONLY the extracted text.
-
-• Do NOT translate.
-
-• Do NOT summarize.
-
-• Do NOT explain.
-
-• Do NOT add comments.
-
-• Preserve paragraphs.
-
-• Preserve punctuation.
-
-• Preserve equations.
-
-• Preserve page numbers.
-
-• Preserve tables as plain text.
-
-• Ignore decorative page borders.
-
-• Ignore illustrations.
-
-• Ignore background textures.
-
-• If a word is uncertain,
-keep your best guess.
-
-Never invent missing text.
-
-If the page contains only a page number,
-return only the page number.
-
-If the page contains only a title,
-return only the title.
-
-If the page is blank,
-return exactly:
-
-EMPTY_PAGE
-
-Never repeat any line.
-
-Never duplicate text.
-
-Never output markdown.
-
-Never output code blocks.
-
-Output only the page text.
+<image>
+Free OCR.
+ 
 """
+# Prompts examples for DeepSeek-OCR
+# document: <image>\n<|grounding|>Convert the document to markdown.
+# other image: <image>\n<|grounding|>OCR this image.
+# without layouts: <image>\nFree OCR.
+# figures in document: <image>\nParse the figure.
+# general: <image>\nDescribe this image in detail.
+# rec: <image>\nLocate <|ref|>xxxx<|/ref|> in the image.
+
+
+
 
 # ----------------------------------------------------------
 # TRANSLATION
