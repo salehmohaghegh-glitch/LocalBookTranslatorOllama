@@ -282,3 +282,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 این پروژه تحت مجوز بین‌المللی MIT منتشر شده است؛ توسعه، تجاری‌سازی و استفاده از آن با حفظ حق مالکیت معنوی اثر کاملاً آزاد است.
 
+<<<<<<< HEAD
+=======
+```
