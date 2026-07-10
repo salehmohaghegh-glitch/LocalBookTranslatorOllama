@@ -1,365 +1,249 @@
-# LocalBookTranslatorOllama
-Local AI-powered book translation pipeline using Ollama with OCR, context-aware translation, checkpoint resume and Markdown/JSON export.
 # 📚 BookTranslatorAI
 
-**BookTranslatorAI** is an offline AI-powered pipeline for translating scanned books using local Large Language Models (LLMs) through Ollama.
-
-The project combines OCR, prompt engineering, context-aware translation, checkpoint recovery, and structured export to produce high-quality translations while running entirely on your own computer.
-
-No cloud services or external APIs are required.
-
----
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
-
-![License](https://img.shields.io/badge/License-MIT-green)
-
-![Offline](https://img.shields.io/badge/Offline-Yes-success)
-
-![Ollama](https://img.shields.io/badge/Ollama-Compatible-black)
-
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-orange)
-## ✨ Features
-
-- Completely offline translation
-- Local AI models powered by Ollama
-- GLM OCR support for scanned pages
-- Context-aware page-by-page translation
-- Automatic resume after interruption
-- Lightweight checkpoint system
-- Simple loop detection to prevent repetitive AI outputs
-- Handles empty or low-text pages
-- Markdown export
-- JSON export
-- Backup translation model
-- Easy configuration
-- Designed for long books
+[English](#english-documentation) | [فارسی](#مستندات-فارسی)
 
 ---
 
-# Workflow
+## English Documentation
 
+### Local AI-powered book translation pipeline using Ollama with DeepSeek-OCR, context-aware translation, checkpoint resume, and Markdown/JSON export.
+
+**BookTranslatorAI** is an offline AI-powered pipeline for translating scanned books using local Large Language Models (LLMs) through Ollama. The project combines advanced lightweight OCR triggers, prompt engineering, context-aware translation, checkpoint recovery, and structured bilingual export to produce high-quality translations while running entirely on your local machine. No cloud services or external APIs are required, preserving complete privacy.
+
+---
+
+### ✨ Features
+* **100% Offline Execution:** Powered entirely by local models via Ollama.
+* **DeepSeek-OCR Integration:** High-efficiency structural and mathematical formula recognition without layout bloat via structural `Free OCR.` processing.
+* **Context-Aware Engine:** Passes the last paragraph of the previous page to maintain translation continuity across page breaks.
+* **Robust Checkpoint System:** Automatically saves current pages and contexts to safely resume after sudden interruptions.
+* **Loop & Hallucination Defense:** Advanced sequential line analysis and string constraints to prevent repetitive model traps.
+* **Bilingual & Multi-Format Export:** Generates structured raw OCR Markdown, Persian translation Markdown, aligned Bilingual Markdown, and detailed page-by-page JSON files.
+
+---
+
+### 🔄 Pipeline Workflow
 ```
-Images
-   │
-   ▼
-GLM OCR
-   │
-   ▼
-OCR Validation
-   │
-   ▼
-Context-aware Translation
-   │
-   ▼
-Loop Detection
-   │
-   ▼
-Quality Check
-   │
-   ├── OK ─────► Markdown + JSON
-   │
-   └── Retry
-          │
-          ▼
-     Backup Model
+   Scanned Images (.png, .jpg)
+                │
+                ▼
+      DeepSeek-OCR (Free OCR)
+                │
+                ▼
+    Post-Processing Regex Filter ──► (Converts \[ \] to $$, cleans BBox residues)
+                │
+                ▼
+     Context-Aware Translation ───► (Injects last translated paragraph)
+                │
+                ▼
+     Loop & Anomaly Detection
+                │
+        ┌───────┴───────┐
+        ▼               ▼
+    [Success]       [Failure]
+        │               │
+        ▼               ▼
+  Export Files    Backup Model
+ (MD, JSON, BI)  (Gemma Fallback)
 ```
 
 ---
 
-# Why BookTranslatorAI?
-
-Most OCR translation tools simply translate each page independently.
-
-BookTranslatorAI keeps a small context from the previous page to improve translation continuity while avoiding the huge memory consumption of traditional translation memory systems.
-
-The project is optimized for:
-
-- scientific books
-- engineering books
-- historical books
-- technical manuals
-- educational documents
+### ⚙️ System Requirements
+* Python 3.10 or newer
+* Ollama Framework Installed
+* At least 8GB to 16GB of VRAM/RAM depending on target models
+* Operating System: Windows, Linux, or macOS
 
 ---
 
-# Main Characteristics
+### 🛠️ Step-by-Step Installation & Setup Guide
 
-Unlike many AI translation scripts, this project focuses on:
-
-- Stable long-book translation
-- Small memory footprint
-- Simple architecture
-- Easy debugging
-- Local execution
-- Human-editable prompts
-- Reliable checkpoint recovery
-
----
-
-# Requirements
-
-- Python 3.10+
-- Ollama
-- GLM OCR model
-- Translation model
-- Windows / Linux
-
----
-
-# Recommended Models
-
-## OCR
-
-```
-glm-ocr:latest
-```
-
-## Translation
-
-```
-translategemma:4b
-```
-
-## Backup
-
-```
-Gemma4:e4b
-```
-
-Any Ollama-compatible model can be used.
-
----
-
-# Installation
-
-Clone repository
-
+#### Step 1: Clone the Repository
+Open your terminal or command prompt and run:
 ```bash
 git clone https://github.com/USERNAME/BookTranslatorAI.git
-
 cd BookTranslatorAI
 ```
 
-Install Python packages
-
+#### Step 2: Install Python Dependencies
+Ensure you have Python 3.10+ installed, then run:
 ```bash
 pip install -r requirements.txt
 ```
 
-Install Ollama
+#### Step 3: Install and Start Ollama
+1. Download Ollama from the official website: [ollama.com](https://ollama.com).
+2. Install it on your system and make sure the application or daemon is active.
 
-https://ollama.com/
-
-Download models
-
+#### Step 4: Download the Required Models
+Execute the following commands in your terminal to fetch the optimized OCR and translation models:
 ```bash
-ollama pull glm-ocr
+# Pull the optimized OCR model
+ollama pull deepseek-ocr:latest
 
+# Pull the primary translation model
 ollama pull translategemma:4b
 
-ollama pull Gemma4:e4b
+# Pull the backup/fallback translation model
+ollama pull Gemma4:latest
 ```
 
----
-
-# Project Structure
-
-```
-BookTranslatorAI/
-
-│
-├── main.py
-├── config.py
-├── prompts.py
-├── requirements.txt
-├── README.md
-├── LICENSE
-│
-├── input/
-│
-├── output/
-│
-└── examples/
+#### Step 5: Configure Your Project
+Open `config.py` in your text editor and specify your book's parameters:
+```python
+BOOK_TITLE = "Your Book Title Here"
+BOOK_TOPIC = "Brief abstract or topic keywords to guide translation terminology..."
 ```
 
----
-
-# Input
-
-Copy scanned page images into
-
-```
-input/
-```
-
-Supported formats
-
-- JPG
-- PNG
-- JPEG
-- TIFF
-
----
-
-# Run
-
+#### Step 6: Load Input Data & Run
+1. Place all your scanned book page images (sorted numerically, e.g., `page_1.png`, `page_2.png`) into the `input/` directory.
+2. Run the main processing execution script:
 ```bash
 python main.py
 ```
 
 ---
 
-# Output
-
-The translated book is generated as
-
+### 📁 Project Structure
 ```
-output/
-
-book.md
-```
-
-Each page is also exported as
-
-```
-0001.json
-
-0002.json
-
-...
+BookTranslatorAI/
+│
+├── main.py                 # Main execution workflow pipeline
+├── config.py               # Central project parameters and model configurations
+├── prompts.py              # Optimized OCR and Translation prompt files
+├── requirements.txt        # Python external library dependencies
+├── README.md               # Unified English and Persian documentation
+│
+├── input/                  # Put your raw scanned page images here (.png, .jpg)
+└── output/                 # Generated translations, raw OCR logs, and JSON backups
+    ├── logs/               # Detailed pipeline logging file output
+    ├── json/               # Page-by-page data snapshots
+    └── temp/               # Temporary runtime caching storage
 ```
 
 ---
 
-# Checkpoint Recovery
+## مستندات فارسی
 
-The translator automatically saves
+### پایپ‌لاین آفلاین ترجمه هوشمند کتاب با استفاده از Ollama، مدل تخصصی DeepSeek-OCR، فرآیند ترجمه پیوسته مبتنی بر کانتکست و قابلیت بازیابی خودکار چک‌پوینت.
 
-- last translated page
-- last paragraph context
-
-If the process stops unexpectedly, translation continues from the last completed page.
+پروژه **BookTranslatorAI** یک پایپ‌لاین کاملاً آفلاین و قدرتمند برای استخراج متن و ترجمه تخصصی کتاب‌های اسکن‌شده یا مصور علمی است. این ابزار با ترکیب تکنیک‌های نوین فعال‌سازی حالت اختصاصی بینایی، مهندسی پرامپت دقیق، در نظر گرفتن بستر متنی صفحات متوالی و سیستم بازیابی وضعیت پیشرفت، فایل‌هایی باکیفیت و ساختاریافته تولید می‌کند. تمام این فرآیند بدون نیاز به اینترنت و سرویس‌های ابری تجاری بر روی رایانه شخصی شما اجرا می‌شود.
 
 ---
 
-# Prompt Engineering
+### ✨ ویژگی‌های کلیدی
+* **اجرای ۱۰۰٪ محلی و آفلاین:** حفظ کامل حریم خصوصی بدون وابستگی به کلیدهای API خارجی یا اینترنت.
+* **یکپارچه‌سازی با DeepSeek-OCR:** استفاده از تریگر ساختاریافته‌ی `Free OCR.` جهت استخراج فوق‌العاده سریع متون و فرمول‌های ریاضی لیتک ($ و $$) بدون تولید مختصات پیکسلی و لایوت‌های مزاحم.
+* **موتور ترجمه متصل به متن (Context-Aware):** تزریق خودکار آخرین پاراگراف صفحه قبل به مدل مترجم جهت حفظ یکپارچگی لحن، ارجاعات متنی و اصطلاحات تخصصی در خطوط مرزی صفحات.
+* **سیستم هوشمند چک‌پوینت (Checkpoint Recovery):** ذخیره آنی وضعیت پیشرفت در پایان هر صفحه؛ در صورت قطع ناگهانی فرآیند، برنامه به طور خودکار از ابتدای آخرین صفحه ناتمام به کار خود ادامه می‌دهد.
+* **مکانیسم ضد لوپ و هذیان هوش مصنوعی:** مجهز به لایه شناسایی توالی تکراری خطوط خروجی و توقف خودکار پردازش جهت جلوگیری از هدر رفتن منابع سخت‌افزاری.
+* **خروجی‌های هم‌تراز دوزبانه:** تولید همزمان فایل‌های متنی مستقل OCR، فایل ترجمه فارسی روان، نسخه دوزبانه ستون به ستون (Bilingual) و خروجی‌های ساختاریافته‌ی JSON برای هر صفحه.
 
-Instead of relying on complex translation memory systems, this project uses carefully designed prompts to improve translation quality.
+---
 
-The prompts are designed to:
-
-- preserve formatting
-- preserve paragraph order
-- avoid AI hallucinations
-- avoid endless repetition
-- handle empty pages
-- handle pages containing only page numbers
-- keep terminology consistent
-- improve translation continuity
-
-Prompt customization is available through
-
+### 🔄 روال پایپ‌لاین و پردازش داده‌ها
 ```
-prompts.py
+   تصاویر اسکن شده ورودی (.png, .jpg)
+                │
+                ▼
+      استخراج متن با DeepSeek-OCR
+                │
+                ▼
+    فیلتر و پایش ساختاری Regex ──► (اصلاح ساختار لیتک \[ \] به $$ و پاکسازی کدهای اضافه)
+                │
+                ▼
+    ترجمه هوشمند با پیوستگی متن ───► (تزریق آخرین پاراگراف ترجمه شده قبلی)
+                │
+                ▼
+     بررسی کیفیت و الگوریتم ضد لوپ
+                │
+        ┌───────┴───────┐
+        ▼               ▼
+     [موفق]          [ناموفق]
+        │               │
+        ▼               ▼
+  ذخیره خروجی‌ها     فراخوانی مدل پشتیبان
+ (MD, JSON, BI)     (Gemma Fallback)
 ```
 
 ---
 
-# Configuration
+### ⚙️ نیازمندی‌های سیستم
+* پایتون نسخه 3.10 یا بالاتر
+* ابزار مدیریت مدل لوکال Ollama
+* حافظه گرافیکی (VRAM) یا حافظه موقت (RAM) متناسب با حجم مدل‌های انتخابی (حداقل ۸ الی ۱۶ گیگابایت)
+* سیستم‌عامل: ویندوز، لینوکس یا مک
 
-Most settings can be modified in
+---
 
+### 🛠️ راهنمای گام‌به‌گام راه‌اندازی و اجرای صفر تا صد
+
+#### گام اول: شبیه‌سازی یا دریافت مخزن پروژه
+ترمینال یا خط فرمان (Command Prompt) خود را باز کرده و دستورات زیر را وارد کنید:
+```bash
+git clone https://github.com/USERNAME/BookTranslatorAI.git
+cd BookTranslatorAI
 ```
-config.py
+
+#### گام دوم: نصب پکیج‌ها و پیش‌نیازهای پایتون
+مطمئن شوید پایتون نسخه 3.10+ در سیستم شما نصب و فعال است، سپس دستور زیر را اجرا کنید:
+```bash
+pip install -r requirements.txt
 ```
 
-including
+#### گام سوم: نصب و فعال‌سازی نرم‌افزار Ollama
+1. به سایت رسمی اولاما مراجعه کرده و آن را متناسب با سیستم‌عامل خود دانلود کنید: [ollama.com](https://ollama.com).
+2. نرم‌افزار را نصب کرده و مطمئن شوید که سرویس آن در پس‌زمینه در حال اجرا است.
 
-- models
-- directories
-- retry count
-- temperature
-- checkpoint
-- export options
+#### گام چهارم: دانلود مدل‌های هوش مصنوعی مورد نیاز
+برای دانلود مدل تخصصی پردازش تصویر و مدل‌های ترجمه، دستورات زیر را به ترتیب در ترمینال وارد کنید تا فرآیند دانلود محلی آغاز شود:
+```bash
+# دانلود مدل تخصصی استخراج متن و فرمول
+ollama pull deepseek-ocr:latest
 
----
+# دانلود مدل اصلی ترجمه تخصصی متون
+ollama pull translategemma:4b
 
-# Roadmap
+# دانلود مدل پشتیبان جهت استفاده در مواقع اضطراری یا لوپ
+ollama pull Gemma4:latest
+```
 
-- [x] OCR
-- [x] Local translation
-- [x] Checkpoint resume
-- [x] Loop detection
-- [x] Markdown export
-- [x] JSON export
+#### گام پنجم: تنظیم مشخصات کتاب جاری
+فایل `config.py` را با یک ادیتور متنی باز کنید و عنوان و موضوع خلاصه کتاب خود را بنویسید (این اطلاعات به مترجم کمک می‌کند تا اصطلاحات علمی را متناسب با موضوع حدس بزند):
+```python
+BOOK_TITLE = "عنوان کتاب شما در این قسمت"
+BOOK_TOPIC = "موضوع خلاصه، کلمات کلیدی یا چکیده کتاب جهت هماهنگ‌سازی واژگان تخصصی..."
+```
 
-Future plans
-
-- [ ] GUI
-- [ ] PDF input
-- [ ] EPUB export
-- [ ] DOCX export
-- [ ] Multi-language interface
-- [ ] Better OCR validation
-- [ ] Translation quality scoring
-
----
-
-# Contributing
-
-Pull requests are welcome.
-
-If you have ideas for improving translation quality, OCR accuracy, prompt engineering, or workflow optimization, feel free to open an issue or submit a pull request.
+#### گام ششم: بارگذاری تصاویر و شروع فرآیند پردازش
+1. تصاویر صفحات کتاب اسکن‌شده را (که به ترتیب شماره‌گذاری شده‌اند، مانند `1.png` یا `page_001.jpg`) داخل پوشه `input/` کپی کنید.
+2. اسکریپت اصلی برنامه را برای شروع عملیات فراخوانی کنید:
+```bash
+python main.py
+```
 
 ---
 
-# License
-
-This project is released under the MIT License.
-
-See the LICENSE file for details.
-
----
-
-# Acknowledgments
-
-This project would not be possible without the following open-source projects:
-
-- Ollama
-- GLM OCR
-- TranslateGemma
-- Gemma
-- Python
-
-Special thanks to all contributors in the open-source AI community.
+### 📁 ساختار پرونده‌های پروژه
+```
+BookTranslatorAI/
+│
+├── main.py                 # هسته اصلی و مدیریت پایپ‌لاین اجرای برنامه
+├── config.py               # فایل مرکزی تنظیمات متغیرها، مسیرها و مدل‌ها
+├── prompts.py              # پرامپت‌ها و دستورات بهینه‌سازی شده سیستم برای مدل‌ها
+├── requirements.txt        # پکیج‌ها و کتابخانه‌های خارجی پایتون مورد نیاز
+├── README.md               # مستندات جامع و راهنمای دو زبانه فعلی پروژه
+│
+├── input/                  # پوشه مبدا؛ تصاویر صفحات اسکن شده را اینجا قرار دهید
+└── output/                 # پوشه مقصد؛ فایل‌های ترجمه، خروجی خام متون و جی‌سان‌ها
+    ├── logs/               # فایل لاگین دقیق سیستم جهت رهگیری خطاهای احتمالی
+    ├── json/               # فایل‌های پشتیبان صفحه‌به‌صفحه برای دسترسی‌های آینده
+    └── temp/               # ذخیره‌سازی موقت لایه‌های در حال پردازش سیستم
+```
 
 ---
 
-# Why this project was created
-
-This project started from a simple idea:
-
-> Translating a scanned book locally should be straightforward, reliable, and accessible to everyone.
-
-Many existing AI translation workflows require cloud services, expensive APIs, or complex software stacks. While these solutions are powerful, they are not always practical for users who prefer offline processing, value privacy, or work with large collections of scanned books.
-
-BookTranslatorAI was created to provide a lightweight alternative that combines OCR, prompt engineering, and local Large Language Models into a simple and transparent workflow.
-
-The project is intentionally designed to be:
-
-- Fully offline
-- Easy to understand
-- Easy to customize
-- Easy to debug
-- Efficient on consumer hardware
-
-Rather than trying to replace professional translation software, BookTranslatorAI aims to be an open-source foundation that anyone can study, improve, and adapt to their own translation workflow.
-
-Contributions, ideas, and feedback are always welcome.
-
-
-# Disclaimer
-
-BookTranslatorAI is intended as an AI-assisted translation tool.
-
-Although the generated translations are often of high quality, human review is recommended before publication or commercial use.
+### 📄 License / مجوز
+This project is licensed under the MIT License - see the LICENSE file for details.  
+این پروژه تحت مجوز بین‌المللی MIT منتشر شده است؛ استفاده و توسعه آن با ذکر نام منبع کاملاً آزاد است.
