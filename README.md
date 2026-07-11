@@ -281,8 +281,3 @@ python main.py
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 این پروژه تحت مجوز بین‌المللی MIT منتشر شده است؛ توسعه، تجاری‌سازی و استفاده از آن با حفظ حق مالکیت معنوی اثر کاملاً آزاد است.
-
-<<<<<<< HEAD
-=======
-```
->>>>>>> e361aedfd366f6fdc430b032aa55f6840697b547
